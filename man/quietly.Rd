@@ -10,10 +10,14 @@ quietly(e)
 \item{e}{An expression to evaluate.}
 }
 \value{
-The result of the expression with messages suppressed and output captured.
+The result of the expression with messages suppressed and output
+captured.
 }
 \description{
 This function suppresses messages and captures output from an expression.
+Note that this does NOT return the result of the expression! It is
+intended to be used in contexts where certain operations with side
+effects are performed but the verbosity should be suppressed.
 }
 \examples{
 
@@ -30,6 +34,8 @@ quietly({
     a <- a + 1
     print(a)
 })
+print(a)
+#> 2
 
 }
 \keyword{interactivity}

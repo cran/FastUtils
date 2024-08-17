@@ -1,14 +1,19 @@
 #' Convert a Column to Row Names
 #'
-#' This function converts a specified column of a data frame to row names, ensuring uniqueness if necessary.
+#' This function converts a specified column of a data frame to row names,
+#' ensuring uniqueness if necessary.
 #'
 #' @param df A data frame.
-#' @param col A character string specifying the name of the column to convert to row names.
-#' @param .remove A logical indicating whether to remove the selected column after converting to row names. Default is TRUE.
-#' @param .uniqueSep A character string to separate duplicate row names when ensuring uniqueness
+#' @param col A character string specifying the name of the column to convert
+#' to row names.
+#' @param .remove A logical indicating whether to remove the selected column
+#' after converting to row names. Default is TRUE.
+#' @param .uniqueSep A character string to separate duplicate row names when
+#' ensuring uniqueness
 #' with [make.unique()]. Default is ".".
 #'
-#' @return A data frame with the specified column as row names. If `.remove` is TRUE, the original column is removed.
+#' @return A data frame with the specified column as row names. If `.remove`
+#' is TRUE, the original column is removed.
 #' @export
 #' @keywords wrangling
 #' @seealso [mutateToRownames()]
@@ -31,12 +36,16 @@ colToRownames <- function(df, col, .remove = TRUE, .uniqueSep = ".") {
 #' @description
 #' `r lifecycle::badge("experimental")`
 #'
-#' This function sets new row names for a data frame based on a tidy evaluation expression.
+#' This function sets new row names for a data frame based on a tidy
+#' evaluation expression.
 #'
 #' @param .data A data frame.
-#' @param expr A tidy evaluation expression specifying the columns to use for the new row names.
-#' @param .remove A logical indicating whether to remove the selected columns. Default is FALSE.
-#' @param .uniqueSep A character string to separate duplicate row names when ensuring uniqueness
+#' @param expr A tidy evaluation expression specifying the columns to use for
+#' the new row names.
+#' @param .remove A logical indicating whether to remove the selected columns.
+#' Default is FALSE.
+#' @param .uniqueSep A character string to separate duplicate row names when
+#' ensuring uniqueness
 #' with [make.unique()]. Default is ".".
 #'
 #' @return A data frame with updated row names.
@@ -87,7 +96,7 @@ rownamesToCol <- function(df, colname = "rownames") {
 #'
 #' @param object A data frame or matrix.
 #' @param newColnames A character vector specifying the new column names.
-#' 
+#'
 #' @return The data frame or matrix with updated column names.
 #' @export
 #' @keywords wrangling
@@ -119,31 +128,75 @@ setRownames <- function(object, newRownames) {
     object
 }
 
+#' Set Names of an Object
+#'
+#' Improvement to [stats::setNames()] sets new names for an object,
+#' ensuring that the length of the new names matches the length of the object.
+#' Additionally, if the length of newNames is one, it is repeated to match
+#' the length of the object.
+#'
+#' @param object An object.
+#' @param newNames A character vector specifying the new names.
+#'
+#' @return The object with updated names.
+#' @export
+#' @keywords wrangling
+#' @examples
+#' # Set new names for a vector
+#' x <- c(1, 2, 3)
+#' x <- setNames(x, c("A", "B", "C"))
+#'
+#' # some syntactic sugar can be achieved with a special mutator
+#' `%setNames%` <- createMutator(setNames)
+#' x %setNames% c("D", "E", "F")
+#'
+setNames <- function(object, newNames) {
+    assertthat::assert_that(
+        length(newNames) == 1 || length(newNames) == length(object)
+    )
+    names(object) <- if (length(newNames) == length(object)) {
+        newNames
+    } else {
+        rep(newNames, length(object))
+    }
+    object
+}
+
 #' Fix Column Names
 #'
-#' @description 
+#' @description
 #' `r lifecycle::badge("experimental")`
 #'
-#' This function fixes the column names of a given object so that all words are spaced by a specified delimiter, 
-#' and any special characters are replaced according to a substitution map.
+#' This function fixes the column names of a given object so that all words
+#' are spaced by a specified delimiter, and any special characters are replaced
+#' according to a substitution map.
 #'
 #' @param object A data frame or matrix.
-#' @param invalidRegex A character string containing a regular expression pattern for invalid characters to replace. Default is "( )|(\\()|(\\))|(\\.)|(/)".
-#' @param spacing A character string to replace invalid characters with. Default is "_".
-#' @param subMap A named list where the names are regular expressions and the values are the replacement strings. These substitutions are applied before `.subMap`.
-#' @param .subMap A named list where the names are regular expressions and the values are the replacement strings. These substitutions are applied after `subMap`. Default is list("\\+" = "plus").
-#' @param unique A logical indicating whether to ensure unique column names by appending a suffix if necessary. Default is FALSE.
+#' @param invalidRegex A character string containing a regex pattern
+#' for invalid characters to replace. Default is "( )|(\\()|(\\))|(\\.)|(/)".
+#' @param spacing A character string to replace invalid characters with. Default
+#' is "_".
+#' @param subMap A named list where the names are regular expressions and the
+#' values are the replacement strings. These substitutions are applied before
+#' `.subMap`.
+#' @param .subMap A named list where the names are regular expressions and the
+#' values are the replacement strings. These substitutions are applied after
+#' `subMap`. Default is list("\\+" = "plus").
+#' @param unique A logical indicating whether to ensure unique column names by
+#' appending a suffix if necessary. Default is FALSE.
 #'
 #' @return The data frame or matrix with fixed column names.
 #' @export
 #' @keywords wrangling
 #' @examples
 #' # Fix column names of a data frame
-#' df <- data.frame(`A (1)` = c(1, 2, 3), `B/C` = c(4, 5, 6), `D+E` = c(7, 8, 9))
+#' df <- data.frame(
+#'     `A (1)` = c(1, 2, 3), `B/C` = c(4, 5, 6), `D+E` = c(7, 8, 9)
+#' )
 #' fixColnames(df)
 fixColnames <- function(
     object,
-    invalidRegex = "( )|(\\()|(\\))|(\\.)|(/)",
+    invalidRegex = joinRegex(" ", "\\)", "\\(", "\\.", "/"),
     spacing = "_",
     subMap = NULL,
     .subMap = list(
@@ -159,8 +212,8 @@ fixColnames <- function(
     unique = FALSE
 ) {
 
-    assertthat::assert_that(is.character(invalidRegex) && length(invalidRegex) == 1)
-    assertthat::assert_that(is.character(spacing) && length(spacing) == 1)
+    assertthat::assert_that(assertthat::is.string(invalidRegex))
+    assertthat::assert_that(assertthat::is.string(spacing))
 
     subMap <- append(subMap, .subMap)
 
@@ -172,7 +225,7 @@ fixColnames <- function(
     }
 
     gsubr <- function(x, pattern, replacement) gsub(pattern, replacement, x)
-    
+
     newColnames <- newColnames %>%
         gsubr(invalidRegex, spacing) %>%
         gsubr("([a-z])([A-Z])", "\\1_\\2") %>%

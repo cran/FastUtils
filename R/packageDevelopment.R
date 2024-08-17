@@ -4,18 +4,20 @@
 #' `r lifecycle::badge('experimental')`
 #'
 #' This function retrieves keywords from all package documentation files located
-#' in the `/man` directory of the specified R package. It can return a unique list
-#' of keywords or a frequency distribution of these keywords as a `table` object,
-#' sorted by the keys.
+#' in the `/man` directory of the specified R package. It can return a unique
+#' list of keywords or a frequency distribution of these keywords as a `table`
+#' object, sorted by the keys.
 #'
 #' Note that the "internal" keyword is ignored.
 #'
 #' @param pkg The path to the R package directory.
-#' @param asDistribution Logical; if FALSE, returns a character vector of unique keywords. If TRUE, returns a table with the frequency of each keyword.
+#' @param asDistribution Logical; if FALSE, returns a character vector of unique
+#' keywords. If TRUE, returns a table with the frequency of each keyword.
 #'
-#' @return If \code{asDistribution} is FALSE, a sorted character vector of unique keywords is returned.
-#'         If \code{asDistribution} is TRUE, a table of keywords and their frequencies is returned.
-#'         If no keywords were detected, returns a character of length 0.
+#' @return If \code{asDistribution} is FALSE, a sorted character vector of
+#' unique keywords is returned. If \code{asDistribution} is TRUE, a table of
+#' keywords and their frequencies is returned. If no keywords were detected,
+#' returns a character of length 0.
 #' @export
 #' @keywords packageDevelopment
 #'
@@ -25,6 +27,14 @@
 #'
 getPkgKeywords <- function(pkg = ".", asDistribution = FALSE) {
 
+    assertthat::assert_that(assertthat::is.string(pkg))
+    assertthat::assert_that(assertthat::is.flag(asDistribution))
+
+    if (!dir.exists(pkg)) {
+        warning("the package path does not exist")
+        return(character(0))
+    }
+
     manDir <- file.path(pkg, "man")
     if (!dir.exists(manDir)) {
         warning(
@@ -33,7 +43,7 @@ getPkgKeywords <- function(pkg = ".", asDistribution = FALSE) {
         return(character(0))
     }
 
-    rdFiles <- list.files(manDir, pattern = "\\.Rd$", full.names = TRUE)
+    rdFiles <- listFiles(manDir, pattern = "\\.Rd$")
     if (length(rdFiles) == 0) {
         warning("no `.Rd` files were found in the `/man` directory")
         return(character(0))
@@ -64,18 +74,23 @@ getPkgKeywords <- function(pkg = ".", asDistribution = FALSE) {
 #' @description
 #' `r lifecycle::badge("experimental")`
 #'
-#' This function scans Rd documentation files in the specified package's `\man` directory
-#' to identify which functions lack certain documentation sections like `\examples`. If
-#' there are no missing sections in all the Rd files, then the output is a `character(0)`
+#' This function scans Rd documentation files in the specified package's `\man`
+#' directory to identify which functions lack certain documentation sections
+#' like `\examples`. If there are no missing sections in all the Rd files, then
+#' the output is a `character(0)`
 #'
 #' @param sectionName A character vector of the Rd sections to look for.
-#' @param pkg The path to the package directory, defaulting to the current directory ".".
-#' @param ignore Additional Regexes of *function names* to be ignored in the output.
-#' @param .ignore More regexes of functions to ignore set by default. Will be appended with
+#' @param pkg The path to the package directory, defaulting to the current
+#' directory.
+#' @param ignore Additional Regexes of *function names* to be ignored in the
+#' output.
+#' @param .ignore More regexes of functions to ignore set by default. Will be
+#' appended with
 #' the `ignore` regexes and unioned with [joinRegex()].
 #'
 #' @return Character vector of function names that are missing any of the
-#' specified sections in their Rd files. May be length 0 if all fulfill criteria.
+#' specified sections in their Rd files. May be length 0 if all fulfill
+#' criteria.
 #' @export
 #' @keywords packageDevelopment
 #'
@@ -86,8 +101,16 @@ getPkgKeywords <- function(pkg = ".", asDistribution = FALSE) {
 #' )
 #'
 findMissingRdSections <- function(
-    sectionName, pkg = ".", ignore = NULL, .ignore = "-package$"
+    sectionName,
+    pkg = ".",
+    ignore = NULL,
+    .ignore = "-package$" # are these used?
 ) {
+
+    assertthat::assert_that(is.character(sectionName))
+    assertthat::assert_that(assertthat::is.string(pkg))
+    assertthat::assert_that(is.null(ignore) || is.character(ignore))
+
     paste("\\", sectionName, "{", sep = "") %>%
         greplDir(file.path(pkg, "man")) %>%
         (function(x) names(which(!x))) %>%
@@ -97,6 +120,58 @@ findMissingRdSections <- function(
 #' @rdname findMissingRdSections
 #' @export
 fmrs <- findMissingRdSections
+
+#' Remove New Snapshots from vdiffr Tests
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' This function removes new snapshots created by `vdiffr` tests. It is useful
+#' when you want to remove new snapshots that were created during testing and
+#' are no longer needed.
+#'
+#' @param pkg The path to the package directory.
+#' @param snapDir The path to the directory containing the snapshots. Default
+#' is `tests/testthat/_snaps`. If this directory isn't valid, nothing happens.
+#' @param verbose Logical; if TRUE, prints the paths of the new snapshots that
+#'
+#' @return NULL (invisible) - used for side effects
+#' @export
+#' @keywords testing
+#'
+#' @examples
+#' \donttest{
+#' removeVdiffrNewSnapShots()
+#' }
+#'
+removeVdiffrNewSnapShots <- function(
+    pkg = getwd(),
+    snapDir = file.path("tests", "testthat", "_snaps"),
+    verbose = TRUE
+) {
+
+    assertthat::assert_that(assertthat::is.string(pkg))
+    assertthat::assert_that(assertthat::is.string(snapDir))
+    assertthat::assert_that(assertthat::is.flag(verbose))
+
+    if (!dir.exists(snapDir)) return(invisible())
+
+    newSnapshotPaths <- listFiles(
+        snapDir, pattern = "\\.new\\.svg$", recursive = TRUE
+    )
+
+    if (length(newSnapshotPaths) == 0) return(invisible())
+
+    if (verbose)
+        cli::cli_inform(setNames(paste("deleting", newSnapshotPaths), "i"))
+
+    sapply(newSnapshotPaths, base::file.remove)
+    invisible()
+}
+
+#' @rdname removeVdiffrNewSnapShots
+#' @export
+rmns <- removeVdiffrNewSnapShots
 
 # TODO function to modify roxygen files and add keyword section to everything
 # based on filename

@@ -1,10 +1,10 @@
 #' Create a Mutator Function
 #'
-#' This function creates a mutator function based on a specified binary operator.
-#' The output mutator function updates a variable in the parent frame by applying
-#' the binary operator with a given value. It's recommended to use this function
-#' to easily construct special functions in the form of `%f%` where `f` can be any
-#' symbol of choice. See examples.
+#' Creates a mutator function based on a specified binary operator.
+#' The output mutator function updates a variable in the parent frame by
+#' applying the binary operator with a given value. It's recommended to use
+#' this function to easily construct special functions in the form of `%f%`
+#' where `f` can be any symbol of choice. See examples.
 #'
 #' @param binaryOperator A binary operator function to apply for the mutation.
 #'
@@ -20,6 +20,11 @@
 #' x # becomes 2
 #'
 createMutator <- function(binaryOperator) {
+
+    assertthat::assert_that(
+        is.function(binaryOperator) && length(formals(binaryOperator)) >= 2
+    )
+
     function(var, val) {
         eval(
             call("<-", substitute(var), binaryOperator(var, val)),

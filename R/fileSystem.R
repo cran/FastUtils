@@ -9,7 +9,7 @@
 #' @param dirPath Character. The path to the directory from which to list files.
 #' @param ... Additional arguments passed to [base::list.files()] (e.g.,
 #' `pattern`, `recursive`). Note that `full.names` will be ignored.
-#' 
+#'
 #' @return A character vector of file paths.
 #' @export
 #' @keywords fileSystem
@@ -22,11 +22,11 @@
 #'
 listFiles <- function(dirPath, ...) {
 
-    assertthat::assert_that(is.character(dirPath) && length(dirPath) == 1)
+    assertthat::assert_that(assertthat::is.string(dirPath))
 
     filesAndDirs <- base::do.call(
         list.files,
-        append(
+        base::append(
             list(path = dirPath, full.names = TRUE),
             rmByName(list(...), "full.names", silent = TRUE)
         )
